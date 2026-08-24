@@ -1,0 +1,51 @@
+schema: spec-driven
+
+# Project context (optional)
+# This is shown to AI when creating artifacts.
+context: |
+  Firemní sportovní výzvy — internal Next.js 14 (Pages Router) app for
+  company sports challenges at Lundegaard. Czech UI. Employees log in via
+  Slack OAuth, log activities, and compete on a leaderboard.
+
+  This is an existing (brownfield) app, not a greenfield project — most
+  core features (challenges, activities, catalog, leaderboard, enrollments,
+  audit log, roles) are already built and in production.
+
+  Background docs (do not treat as OpenSpec specs — they are source
+  material to read during /opsx:explore, per OpenSpec's brownfield
+  guidance):
+    - PRD_Sportovni_vyzvy.md — original product requirements (Czech)
+    - CLAUDE.md — architecture, stack, DB schema, access-control rules
+    - .impeccable.md — design system / brand tokens
+    - NAVRH_Slack_notifikace.md — proposed Slack notification features,
+      status "návrh" (proposal) — several tiers are NOT built yet and are
+      good candidates for early OpenSpec changes
+
+  Stack: TypeScript (strict), Drizzle ORM, SQLite (dev) / Turso (prod),
+  NextAuth.js v4 (Slack provider), Tailwind CSS + shadcn/ui, Vercel.
+
+  Conventions: see CLAUDE.md for the API route pattern
+  (requireAuth/requireAdmin), the audit-log rule (isAdminIntervention),
+  and the rule that CLOSED/ARCHIVED challenges are fully immutable.
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+#   operations:
+#     apply:
+#       guidance:
+#         - Keep test summaries concise
+#     archive:
+#       guidance:
+#         - Summarize the archive outcome before finishing
