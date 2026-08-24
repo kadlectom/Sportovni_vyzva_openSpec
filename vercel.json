@@ -3,6 +3,8 @@
   "crons": [
     { "path": "/api/cron/daily-bonus-announce", "schedule": "0 7 * * *" },
     { "path": "/api/cron/daily-bonus-announce", "schedule": "0 8 * * *" },
+    { "path": "/api/cron/monday-summary",       "schedule": "30 6 * * 1" },
+    { "path": "/api/cron/monday-summary",       "schedule": "30 7 * * 1" },
     { "path": "/api/cron/onboarding-nudge",     "schedule": "0 8 * * *" },
     { "path": "/api/cron/onboarding-nudge",     "schedule": "0 9 * * *" },
     { "path": "/api/cron/weekly-summary",       "schedule": "0 12 * * 5" },
