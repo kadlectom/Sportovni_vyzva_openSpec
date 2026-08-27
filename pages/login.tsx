@@ -148,6 +148,25 @@ export default function LoginPage({ activeChallengeName, activeChallengeId, acti
             {loading ? "Přihlašuji…" : "Přihlásit se přes Slack"}
           </button>
 
+          {process.env.NODE_ENV === "development" && (
+            <div style={{ marginTop: 24, display: "grid", gap: 10 }}>
+              <button
+                onClick={() => { setLoading(true); signIn("dev-login", { role: "participant", callbackUrl }) }}
+                disabled={loading}
+                style={{ width: "100%", padding: "11px 16px", borderRadius: 10, border: "1px solid #D0D5E0", background: "#F7F8FA", color: "#1C1C2E", fontSize: 14, fontWeight: 700, cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1 }}
+              >
+                Jako účastník
+              </button>
+              <button
+                onClick={() => { setLoading(true); signIn("dev-login", { role: "admin", callbackUrl }) }}
+                disabled={loading}
+                style={{ width: "100%", padding: "11px 16px", borderRadius: 10, border: "1px solid #D0D5E0", background: "#F7F8FA", color: "#1C1C2E", fontSize: 14, fontWeight: 700, cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1 }}
+              >
+                Jako admin
+              </button>
+            </div>
+          )}
+
           <p style={{ marginTop: 18, fontSize: 12, color: "#8B909E", textAlign: "center" }}>
             Pouze pro zaměstnance Lundegaard
           </p>

@@ -1,4 +1,5 @@
 import { NextAuthOptions } from "next-auth"
+import CredentialsProvider from "next-auth/providers/credentials"
 import SlackProvider from "next-auth/providers/slack"
 import { db } from "@/lib/db"
 import { users } from "@/db/schema"
@@ -10,6 +11,47 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.SLACK_CLIENT_ID!,
       clientSecret: process.env.SLACK_CLIENT_SECRET!,
     }),
+    ...(process.env.NODE_ENV === "development"
+      ? [
+          CredentialsProvider({
+            id: "dev-login",
+            name: "Development login",
+            credentials: {
+              role: { label: "Role", type: "text" },
+            },
+            async authorize(credentials) {
+              if (process.env.NODE_ENV !== "development") return null
+
+              const role = credentials?.role
+              if (role !== "admin" && role !== "participant") return null
+
+              const slackId = `dev-${role}`
+              const existing = await db
+                .select()
+                .from(users)
+                .where(eq(users.slackId, slackId))
+                .get()
+
+              const devUser = existing ?? (await db.insert(users).values({
+                id: crypto.randomUUID(),
+                slackId,
+                name: role === "admin" ? "Dev Admin" : "Dev Participant",
+                email: `${slackId}@localhost`,
+                avatarUrl: null,
+                role,
+                createdAt: new Date(),
+              }).returning().get())
+
+              return {
+                id: devUser.id,
+                name: devUser.name,
+                email: devUser.email,
+                image: devUser.avatarUrl,
+              }
+            },
+          }),
+        ]
+      : []),
   ],
 
   session: { strategy: "jwt" },
@@ -21,6 +63,7 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     // ── Sign-in ──────────────────────────────────────────────────────────────
     async signIn({ user, account }) {
+      if (account?.provider === "dev-login") return true
       if (account?.provider !== "slack") return false
 
       // Restrict to a single workspace if SLACK_TEAM_ID is set
@@ -66,20 +109,30 @@ export const authOptions: NextAuthOptions = {
     // from DB so role changes take effect on the next request.
     async jwt({ token, account }) {
       if (account) {
-        token.slackId = account.providerAccountId
+        if (account.provider === "slack") {
+          token.slackId = account.providerAccountId
+        } else if (account.provider === "dev-login") {
+          token.userId = account.providerAccountId
+        }
       }
 
-      if (token.slackId) {
-        const dbUser = await db
-          .select({ id: users.id, role: users.role })
-          .from(users)
-          .where(eq(users.slackId, token.slackId as string))
-          .get()
+      const dbUser = token.slackId
+        ? await db
+            .select({ id: users.id, role: users.role })
+            .from(users)
+            .where(eq(users.slackId, token.slackId as string))
+            .get()
+        : token.userId
+          ? await db
+              .select({ id: users.id, role: users.role })
+              .from(users)
+              .where(eq(users.id, token.userId as string))
+              .get()
+          : undefined
 
-        if (dbUser) {
-          token.userId = dbUser.id
-          token.role   = dbUser.role
-        }
+      if (dbUser) {
+        token.userId = dbUser.id
+        token.role   = dbUser.role
       }
 
       return token
