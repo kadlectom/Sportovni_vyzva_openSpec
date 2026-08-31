@@ -73,7 +73,7 @@ async function loadContext(args: Args): Promise<Context | null> {
       .where(eq(activities.id, args.activityId))
       .then((r) => r[0] ?? null),
     db
-      .select({ userId: users.id, slackId: users.slackId })
+      .select({ userId: users.id, slackId: users.slackId, notificationsEnabled: users.notificationsEnabled })
       .from(users)
       .where(inArray(users.id, args.partnerUserIds)),
   ])
@@ -83,7 +83,7 @@ async function loadContext(args: Args): Promise<Context | null> {
     return null
   }
 
-  const validRecipients = recipients.filter((r) => Boolean(r.slackId))
+  const validRecipients = recipients.filter((r) => Boolean(r.slackId) && r.notificationsEnabled)
   if (validRecipients.length === 0) return null
 
   return {

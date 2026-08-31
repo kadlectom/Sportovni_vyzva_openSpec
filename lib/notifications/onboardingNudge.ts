@@ -34,6 +34,7 @@ export async function notifyOnboardingNudge(): Promise<NudgeResult> {
       .select({
         userId:        users.id,
         slackId:       users.slackId,
+        notificationsEnabled: users.notificationsEnabled,
         challengeId:   challenges.id,
         challengeName: challenges.name,
         challengeSlug: challenges.slug,
@@ -86,6 +87,10 @@ export async function notifyOnboardingNudge(): Promise<NudgeResult> {
 
     // Step 4 — deliver to the survivors.
     for (const c of candidates) {
+      if (!c.notificationsEnabled) {
+        result.skipped += 1
+        continue
+      }
       if (haveActivity.has(`${c.userId}|${c.challengeId}`)) {
         result.skipped += 1
         continue

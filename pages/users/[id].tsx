@@ -1,4 +1,5 @@
 import type { GetServerSideProps } from "next"
+import { useState } from "react"
 import Head from "next/head"
 import Link from "next/link"
 import { getSessionUser } from "@/lib/permissions"
@@ -43,6 +44,7 @@ type Props = {
     id: string
     name: string
     avatarUrl: string | null
+    notificationsEnabled?: boolean
   }
   challengeGroups: ChallengeGroup[]
   isOwnProfile: boolean
@@ -50,6 +52,9 @@ type Props = {
 }
 
 export default function UserProfilePage({ profile, challengeGroups, isOwnProfile, fromChallengeId }: Props) {
+  const [notificationsEnabled, setNotificationsEnabled] = useState(profile.notificationsEnabled ?? true)
+  const [savingNotifications, setSavingNotifications] = useState(false)
+  const [notificationError, setNotificationError] = useState(false)
   const totalPoints = challengeGroups.reduce((sum, g) => sum + g.totalPoints, 0)
   const activityCount = challengeGroups.reduce((sum, g) => sum + g.activities.length, 0)
   const bonusKm = challengeGroups.reduce(
@@ -60,6 +65,27 @@ export default function UserProfilePage({ profile, challengeGroups, isOwnProfile
     0,
   )
   const fmt = (n: number) => (n % 1 === 0 ? String(n) : n.toFixed(1))
+
+  async function updateNotificationPreference(enabled: boolean) {
+    const previous = notificationsEnabled
+    setNotificationsEnabled(enabled)
+    setSavingNotifications(true)
+    setNotificationError(false)
+
+    try {
+      const response = await fetch("/api/users/me/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notificationsEnabled: enabled }),
+      })
+      if (!response.ok) throw new Error("notification preference update failed")
+    } catch {
+      setNotificationsEnabled(previous)
+      setNotificationError(true)
+    } finally {
+      setSavingNotifications(false)
+    }
+  }
 
   return (
     <>
@@ -107,6 +133,21 @@ export default function UserProfilePage({ profile, challengeGroups, isOwnProfile
                 <p className="text-[14px] text-gray-mid mt-0.5">
                   napříč {challengeGroups.length} {challengeGroups.length === 1 ? "výzvou" : challengeGroups.length < 5 ? "výzvami" : "výzvami"}
                 </p>
+              )}
+              {isOwnProfile && (
+                <label className="mt-3 flex items-center gap-2 text-[12px] font-semibold text-gray-mid">
+                  <input
+                    type="checkbox"
+                    checked={notificationsEnabled}
+                    disabled={savingNotifications}
+                    onChange={(event) => updateNotificationPreference(event.target.checked)}
+                    className="h-4 w-4 accent-blue"
+                  />
+                  Dostávat Slack notifikace
+                </label>
+              )}
+              {isOwnProfile && notificationError && (
+                <p className="mt-1 text-[11px] text-red">Nepodařilo se uložit nastavení.</p>
               )}
             </div>
           </div>
@@ -241,12 +282,19 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
 
   // Load profile user
   const profileUser = await db
-    .select({ id: users.id, name: users.name, avatarUrl: users.avatarUrl })
+    .select({ id: users.id, name: users.name, avatarUrl: users.avatarUrl, notificationsEnabled: users.notificationsEnabled })
     .from(users)
     .where(eq(users.id, profileId))
     .get()
 
   if (!profileUser) return { notFound: true }
+
+  const profileForViewer = {
+    id: profileUser.id,
+    name: profileUser.name,
+    avatarUrl: profileUser.avatarUrl,
+    ...(viewer.id === profileId ? { notificationsEnabled: profileUser.notificationsEnabled } : {}),
+  }
 
   // Find challenges where the viewer is enrolled
   const viewerEnrollments = await db
@@ -259,7 +307,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
   if (sharedChallengeIds.length === 0) {
     return {
       props: {
-        profile: profileUser,
+        profile: profileForViewer,
         challengeGroups: [],
         isOwnProfile: viewer.id === profileId,
         fromChallengeId,
@@ -430,7 +478,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
 
   return {
     props: {
-      profile: profileUser,
+      profile: profileForViewer,
       challengeGroups: Array.from(groupMap.values()),
       isOwnProfile: viewer.id === profileId,
       fromChallengeId,

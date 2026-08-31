@@ -9,6 +9,7 @@ export const users = sqliteTable("users", {
   email:     text("email"),
   avatarUrl: text("avatar_url"),
   role:      text("role", { enum: ["participant", "admin"] }).notNull().default("participant"),
+  notificationsEnabled: integer("notifications_enabled", { mode: "boolean" }).notNull().default(true),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 })
 
