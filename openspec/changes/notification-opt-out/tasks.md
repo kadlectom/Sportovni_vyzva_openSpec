@@ -1,22 +1,28 @@
 ## 1. Datový model a migrace
 
-- [x] 1.1 Přidat `users.notificationsEnabled` mapovaný na `notifications_enabled` jako NOT NULL boolean s defaultem `true` a ověřit typovou kontrolou schématu.
-- [x] 1.2 Vygenerovat a zkontrolovat Drizzle migraci pro nový sloupec; ověřit aplikací migrace na vývojové SQLite databázi.
+- [ ] 1.1 Přidat `users.notificationsEnabled` jako `NOT NULL BOOLEAN` s výchozí hodnotou `true` a zajistit, aby nový sloupec odpovídal databázovému schématu aplikace.
+- [ ] 1.2 Vygenerovat a zkontrolovat Drizzle migraci pro přidání sloupce; ověřit, že existující uživatelé zůstanou ve výchozím zapnutém stavu.
 
 ## 2. Self-service profilové nastavení
 
-- [x] 2.1 Vytvořit autentizovaný endpoint `pages/api/users/me/notifications.ts` pro GET a PATCH preference; ověřit, že PATCH přijímá pouze boolean a nikdy nepoužívá klientem dodané ID.
-- [x] 2.2 Přidat na vlastní profil checkbox/toggle „Dostávat Slack notifikace“; ověřit načtení aktuální hodnoty, uložení změny a skrytí ovládání na cizím profilu.
-- [x] 2.3 Ověřit self-only autorizaci a výchozí stav `true` testy API/UI.
+- [ ] 2.1 Přidat vlastní profilový endpoint pro čtení a úpravu `notificationsEnabled` tak, aby uživatel mohl měnit pouze svůj vlastní záznam.
+- [ ] 2.2 Přidat do vlastního profilu checkbox/toggle „Dostávat Slack notifikace“ a zajistit, že se zobrazuje pouze pro přihlášeného uživatele.
+- [ ] 2.3 Ověřit, že cizí uživatel neodpovídá za nastavení jiné osoby a že výchozí hodnota je `true`.
 
-## 3. Recipient-side potlačení DM
+## 3. Recipient-side potlačení osobních DM
 
-- [x] 3.1 Upravit onboarding nudge tak, aby kontroloval `notificationsEnabled` u příjemce před log insert a Slack odesláním; ověřit zapnuté doručení i vypnuté čisté přeskočení bez Slack callu a bez `notification_log`.
-- [x] 3.2 Upravit partner-tagged notification tak, aby kontrolovala `notificationsEnabled` u každého příjemce, nikoli u aktéra; ověřit zapnuté doručení i vypnuté čisté přeskočení bez logu.
-- [x] 3.3 Ověřit, že kanálové notifikace a ostatní notification flows nejsou opt-out změnou ovlivněné.
+- [ ] 3.1 Upravit `lib/notifications/onboardingNudge.ts` tak, aby před odesláním Slack DM načítal `notificationsEnabled` příjemce a při `false` přeskočil bez Slack volání i bez zápisu do `notification_log`.
+- [ ] 3.2 Upravit `lib/notifications/partnerTagged.ts` stejným způsobem pro každý cílový partner a zajistit, že kontrola se provádí u příjemce, ne u aktéra.
+- [ ] 3.3 Potvrdit, že kanálové notifikace nejsou součástí této změny a zůstávají beze změny.
 
-## 4. Testování a dokončení
+## 4. Testování a ověření
 
-- [x] 4.1 Přidat nebo rozšířit unit/API testy pro preference, oba DM flows, idempotenci a chyby; ověřit `npm test`.
-- [x] 4.2 Spustit typecheck/build a ověřit `npm run build` včetně nové API route a profilového UI.
-- [x] 4.3 Ověřit migration/schema stav a zdokumentovat změnu podle aktualizovaných specs; ověřit `openspec validate` pro change.
+- [ ] 4.1 Přidat/rozšířit testy pro výchozí stav `true`, self-only update, zapnuté doručení a vypnuté přeskočení bez Slack volání a bez `notification_log` záznamu.
+- [ ] 4.2 Ověřit migraci a profilové API v rámci relevantních testů a typechecku pro danou změnu.
+- [ ] 4.3 Zkontrolovat, že requirementy v delta specs odpovídají novému chování a že změna je přesně o „osobních DM opt-out“, nikoli o kanálových notifikacích.
+
+## 5. Implementační připomínky
+
+- Jedná se o změnu ve stávajícím chování: při zapnuté preferenci se zachová současné chování, při vypnuté preferenci se DM přeskočí.
+- Rozsah je omezen na `onboarding-nudge-notification` a `partner-tagged-notification`.
+- Slack „stop“ příkaz a jiné botové opt-out mechanismy nejsou součástí této změny.

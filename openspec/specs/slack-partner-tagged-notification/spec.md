@@ -39,6 +39,20 @@ Slack zpráva SHALL uvádět jméno uživatele, který partnera označil, název
 - **WHEN** aktivita má nenulový partnerský bonus
 - **THEN** částka ve zprávě zahrnuje základní body aktivity i partnerský bonus
 
+### Requirement: Notification respects recipient's opt-out preference
+
+Před odesláním partner-tagged DM SHALL systém načíst `notificationsEnabled` příjemce. Pokud je hodnota `true`, SHALL zachovat běžné odeslání a idempotentní zápis do `notification_log`; pokud je hodnota `false`, SHALL příjemce čistě přeskočit bez odeslání Slack DM a bez zápisu do `notification_log`. Preference aktéra ani jiného uživatele SHALL toto rozhodnutí neovlivnit.
+
+#### Scenario: Recipient has notifications enabled
+
+- **WHEN** nově přidaný partner má `notificationsEnabled = true`
+- **THEN** systém odešle jeho DM a zapíše příslušný idempotentní záznam do `notification_log`
+
+#### Scenario: Recipient has opted out
+
+- **WHEN** nově přidaný partner má `notificationsEnabled = false`
+- **THEN** systém DM neodešle, nezapíše `notification_log` záznam a příjemce čistě přeskočí
+
 ### Requirement: Partner notification delivery is idempotent and fault tolerant
 
 Systém SHALL zabránit duplicitnímu odeslání pro kombinaci aktivity a příjemce pomocí jedinečného záznamu notifikačního logu. Příjemce bez Slack ID nebo chybějící kontext SHALL být přeskočen; chyba Slack API SHALL nezpůsobit selhání hlavního zpracování aktivity.

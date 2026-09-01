@@ -58,6 +58,20 @@ Systém SHALL odeslat nejvýše jeden onboardingový DM pro kombinaci uživatele
 - **WHEN** Slack API vrátí chybu nebo není dostupný token
 - **THEN** systém selhání zaznamená a zpracování cron požadavku zůstane řízené
 
+### Requirement: Notification respects recipient's opt-out preference
+
+Před odesláním onboardingového DM SHALL systém načíst `notificationsEnabled` příjemce. Pokud je hodnota `true`, SHALL zachovat běžné odeslání a idempotentní zápis do `notification_log`; pokud je hodnota `false`, SHALL příjemce čistě přeskočit bez odeslání Slack DM a bez zápisu do `notification_log`. Preference aktéra ani jiného uživatele SHALL toto rozhodnutí neovlivnit.
+
+#### Scenario: Recipient has notifications enabled
+
+- **WHEN** způsobilý příjemce onboardingového DM má `notificationsEnabled = true`
+- **THEN** systém odešle jeho DM a zapíše příslušný idempotentní záznam do `notification_log`
+
+#### Scenario: Recipient has opted out
+
+- **WHEN** způsobilý příjemce onboardingového DM má `notificationsEnabled = false`
+- **THEN** systém DM neodešle, nezapíše `notification_log` záznam a kandidáta čistě přeskočí
+
 ### Requirement: Onboarding cron is authenticated and scheduled for Prague morning
 
 Cron endpoint SHALL vyžadovat platný `CRON_SECRET`. Automatické spuštění SHALL zpracovávat notifikace pouze v pražské hodině 10; deployment SHALL obsahovat UTC běhy `08:00` a `09:00`, aby bylo pokryto CET i CEST. Ruční trigger SHALL umožnit obejít časový gate při zachování autentizace.
